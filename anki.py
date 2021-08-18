@@ -1,10 +1,10 @@
+from copy import deepcopy
 import json
 import urllib.request
-from copy import deepcopy
 
 
 class Anki:
-    DEFAULT_DECK_NAME = 'ObsidianTest'
+    DEFAULT_DECK_NAME = 'Obsidian'
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
         'modelName': 'Базовый',

@@ -1,5 +1,5 @@
-import os
 from datetime import datetime
+import os
 
 from configs import PATH_TO_OBSIDIAN
 
@@ -56,5 +56,3 @@ class Obsidian:
                         self.edited_renamed_notes_old_names.add(note_old_name)
             else:
                 self.added_notes.add(note_name)
-
-

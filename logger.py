@@ -34,7 +34,7 @@ class Logger(logging.Logger):
         log_text = f'Добавлено карт в колоду: {added_notes_count} из {expected_added_notes_count}. Ошибок: {fails_count}.'
 
         if not initial_adding and added_notes_count:
-            log_text += f'\nДобавленые карты:'
+            log_text += f'\nДобавленые карты:' + '\n'
             added_notes_ids = [note_id for note_id in command_result if note_id]
             added_notes_content = anki.get_notes_content(added_notes_ids)
             for note_content in added_notes_content:
@@ -43,20 +43,20 @@ class Logger(logging.Logger):
         self.info(log_text)
 
     def _log_delete_notes_command_result(self, deleted_notes):
-        log_text = f'Из колоды удалены карты (всего {len(deleted_notes)}):'
+        log_text = f'Из колоды удалены карты (всего {len(deleted_notes)}):' + '\n'
         for note in deleted_notes:
             log_text += f'- {note}' + '\n'
         self.info(log_text)
 
     def _log_update_notes_command_result(self, notes_renamed):
-        log_text = f'Переименованы следующие карты (всего {len(notes_renamed)}):'
+        log_text = f'Переименованы следующие карты (всего {len(notes_renamed)}):' + '\n'
         for note_old_text, note_new_text in notes_renamed.items():
             log_text += f'- "{note_old_text}" --> "{note_new_text}"' + '\n'
         self.info(log_text)
 
     def _drop_cards_progress_command_result(self, edited_notes):
         log_text = f'Поскольку некоторые заметки в Obsidian были изменены (всего {len(edited_notes)}), для ' \
-                   f'соответствующих им карт был сброшен прогресс:'
+                   f'соответствующих им карт был сброшен прогресс:' + '\n'
         for note in edited_notes:
             log_text += f'- {note}' + '\n'
         self.info(log_text)

@@ -1,10 +1,10 @@
-import os
 from datetime import datetime
+import os
 
 from anki import CommandExecutor, Anki
 from configs import SYNC_FILE_NAME
-from obsidian import Obsidian
 from logger import logger
+from obsidian import Obsidian
 
 
 class File:
