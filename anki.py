@@ -4,7 +4,7 @@ from copy import deepcopy
 
 
 class Anki:
-    DEFAULT_DECK_NAME = 'Obsidian'
+    DEFAULT_DECK_NAME = 'ObsidianTest'
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
         'modelName': 'Базовый',
@@ -22,6 +22,7 @@ class Anki:
         self.notes_texts = set()
         self.notes_ids = set()
         self.notes_ids_for_notes_texts = {}
+        # self.cards_ids_for_notes_texts = {}
         self.notes_files_ids = set()
         self.notes_texts_for_notes_files_ids = {}
         self.new_names_for_renamed_notes = {}
@@ -29,8 +30,8 @@ class Anki:
     def create_deck(self):
         params = {'deck': self.DEFAULT_DECK_NAME}
         command = 'createDeck'
-        result = self.command_executor.run(command, params)
-        self.logger.log_command_result(result, command)
+        self.command_executor.run(command, params)
+        self.logger.log_command_result(command)
 
     def gen_notes_to_add(self, files_ids_for_notes):
         notes_to_add = []
@@ -41,16 +42,16 @@ class Anki:
             notes_to_add.append(note_content)
         return notes_to_add
 
-    def add_notes(self, notes):
+    def add_notes(self, notes, initial_adding=False):
         params = {'notes': notes}
         command = 'addNotes'
         result = self.command_executor.run(command, params)['result']
-        self.logger.log_command_result(result, command, len(notes))
+        self.logger.log_command_result(command, result, len(notes), initial_adding, self)
         return result
 
     def parse_notes_data(self):
         notes_ids = self._get_notes_ids()
-        notes_content = self._get_notes_content(notes_ids)
+        notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
             self.notes_texts.add(note_text)
@@ -68,7 +69,7 @@ class Anki:
         notes_ids = self.command_executor.run('findNotes', params)['result']
         return notes_ids
 
-    def _get_notes_content(self, notes_ids):
+    def get_notes_content(self, notes_ids):
         params = {"notes": notes_ids}
         notes_content = self.command_executor.run('notesInfo', params)['result']
         return notes_content
@@ -76,16 +77,28 @@ class Anki:
     def delete_notes(self, notes_ids, notes_texts):
         params = {'notes': notes_ids}
         command = 'deleteNotes'
-        result = self.command_executor.run(command, params)['result']
-        note_text_for_note_id = dict(zip(notes_ids, notes_texts))
-        self.logger.log_command_result(result, command, notes_ids, note_text_for_note_id)
-        return result
+        self.command_executor.run(command, params)
+        self.logger.log_command_result(command, notes_texts)
 
-    def rename_notes(self, notes_ids):
-        pass
+    def update_notes(self, notes_ids, notes_old_texts, notes_new_texts):
+        notes_renamed = {}
+        command = 'updateNoteFields'
+        for note_id, note_old_text, note_new_text in zip(notes_ids, notes_old_texts, notes_new_texts):
+            note_content = deepcopy(self.NOTE_TEMPLATE)
+            note_content['id'] = note_id
+            note_content['fields']['Лицевая сторона'] = note_new_text
 
-    def drop_notes_progress(self, notes_ids):
-        pass
+            params = {'note': note_content}
+            self.command_executor.run(command, params)
+            notes_renamed[note_old_text] = note_new_text
+
+        self.logger.log_command_result(command, notes_renamed)
+
+    def drop_cards_progress(self, cards_ids, notes_texts):
+        params = {'cards': cards_ids}
+        command = 'forgetCards'
+        self.command_executor.run(command, params)
+        self.logger.log_command_result(command, notes_texts)
 
 
 class CommandExecutor:

@@ -47,21 +47,37 @@ if __name__ == '__main__':
             notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.deleted_notes]
             anki.delete_notes(notes_ids, obs.deleted_notes)
         if obs.added_notes:
-            notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.added_notes]
-            anki.add_notes(notes_ids)
+            added_notes_files_ids_for_notes_names = {note_name: obs.notes_files_ids_for_notes_names[note_name] for
+                                                     note_name in obs.added_notes}
+            notes_for_adding = anki.gen_notes_to_add(added_notes_files_ids_for_notes_names)
+            anki.add_notes(notes_for_adding)
         if obs.renamed_notes_new_names:
             notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.renamed_notes_old_names]
-            anki.rename_notes(notes_ids)
-            anki.drop_notes_progress(notes_ids)
-        if obs.edited_notes:
-            notes_ids = None
-            anki.drop_notes_progress(notes_ids)
+            anki.update_notes(notes_ids, obs.renamed_notes_old_names, obs.renamed_notes_new_names)
+
+        edited_notes = list(obs.edited_non_renamed_notes | obs.edited_renamed_notes_old_names)
+        if edited_notes:
+            card_ids = [anki.notes_ids_for_notes_texts[note] for note in edited_notes]
+            if obs.edited_renamed_notes_old_names:
+                obs_notes_new_names_for_old_names = dict(zip(obs.renamed_notes_old_names, obs.renamed_notes_new_names))
+                for i in range(len(edited_notes)):
+                    note = edited_notes[i]
+                    if note in obs.edited_renamed_notes_old_names:
+                        new_name = obs_notes_new_names_for_old_names[note]
+                        edited_notes[i] += f' (--> {new_name})'
+            anki.drop_cards_progress(card_ids, edited_notes)
+
+        if not any([obs.deleted_notes, obs.added_notes, obs.renamed_notes_new_names, edited_notes]):
+            logger.info(f'С момента последней синхронизации не обнаружено никаких изменений.')
 
     else:
         # Если синхронизаций ранее не проводилось --> создать доску и выгрузить туда карточки с названиями заметок
         create_deck_result = anki.create_deck()
         notes_for_adding = anki.gen_notes_to_add(obs.notes_files_ids_for_notes_names)
-        anki_added_notes = anki.add_notes(notes_for_adding)
-        if any(anki_added_notes) is True:
-            sync_file.update(new_sync_date)
-            logger.info(f'Синхронизация завершена. Информация о дате и времени занесена в файл {sync_file.name}')
+        anki_added_notes = anki.add_notes(notes_for_adding, initial_adding=True)
+        if not any(anki_added_notes) is True:
+            logger.info(f'Синхронизация не была проведена. Возможно, в указанном каталоге отсутствуют заметки Obsidian.')
+            exit()
+
+    sync_file.update(new_sync_date)
+    logger.info(f'Синхронизация завершена. Информация о дате и времени занесена в файл {sync_file.name}')

@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import datetime
 
 from configs import PATH_TO_OBSIDIAN
@@ -17,9 +16,10 @@ class Obsidian:
 
         self.deleted_notes = set()
         self.added_notes = set()
-        self.renamed_notes_new_names = set()
-        self.renamed_notes_old_names = set()
-        self.edited_notes = set()
+        self.renamed_notes_new_names = []
+        self.renamed_notes_old_names = []
+        self.edited_non_renamed_notes = set()
+        self.edited_renamed_notes_old_names = set()
 
     def parse_notes_stat_data(self):
         note_files = os.walk(PATH_TO_OBSIDIAN).__next__()[2]
@@ -43,16 +43,18 @@ class Obsidian:
 
         last_sync_date = datetime.strptime(last_sync_date, '%Y-%m-%d %H:%M:%S:%f')
         for mod_date, note_name in self.notes_names_for_mod_dates.items():
-            if mod_date >= last_sync_date:
+            note_file_id = self.notes_files_ids_for_notes_names[note_name]
+            if note_file_id in anki.notes_files_ids:
                 if note_name in anki.notes_texts:
-                    self.edited_notes.add(note_name)
+                    if mod_date >= last_sync_date:
+                        self.edited_non_renamed_notes.add(note_name)
                 else:
-                    note_file_id = self.notes_files_ids_for_notes_names[note_name]
-                    if note_file_id in anki.notes_files_ids:
-                        self.renamed_notes_new_names.add(note_name)
-                        note_old_name = anki.notes_texts_for_notes_files_ids[note_file_id]
-                        self.renamed_notes_old_names.add(note_old_name)
-                    else:
-                        self.added_notes.add(note_name)
+                    note_old_name = anki.notes_texts_for_notes_files_ids[note_file_id]
+                    self.renamed_notes_old_names.append(note_old_name)
+                    self.renamed_notes_new_names.append(note_name)
+                    if mod_date >= last_sync_date:
+                        self.edited_renamed_notes_old_names.add(note_old_name)
+            else:
+                self.added_notes.add(note_name)
 
 
