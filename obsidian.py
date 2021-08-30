@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from configs import PATH_TO_OBSIDIAN_VAULT
 
+
 class Obsidian:
     """Obsidian notes data."""
 
