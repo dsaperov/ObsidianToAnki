@@ -19,7 +19,7 @@ from anki import CommandExecutor, Anki
 try:
     from configs import SYNC_FILE_NAME
 except ImportError:
-    exit('Do "cp config.py.default config.py" and set the PATH_TO_OBSIDIAN')
+    exit('Do "cp config.py.default config.py" and set the PATH_TO_OBSIDIAN_VAULT')
 
 from logger import logger
 from obsidian import Obsidian
