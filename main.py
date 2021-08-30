@@ -15,7 +15,12 @@ from datetime import datetime
 import os
 
 from anki import CommandExecutor, Anki
-from configs import SYNC_FILE_NAME
+
+try:
+    from configs import SYNC_FILE_NAME
+except ImportError:
+    exit('Do "cp config.py.default config.py" and set the PATH_TO_OBSIDIAN')
+
 from logger import logger
 from obsidian import Obsidian
 

@@ -1,10 +1,7 @@
 from datetime import datetime
 import os
 
-try:
-    from configs import PATH_TO_OBSIDIAN_VAULT
-except ImportError:
-    exit('Do "cp config.py.default config.py" and set the PATH_TO_OBSIDIAN')
+from configs import PATH_TO_OBSIDIAN_VAULT
 
 
 class Obsidian:
