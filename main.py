@@ -1,3 +1,16 @@
+"""
+ObsidianToAnki is a console application, which turns Obsidian app notes names into Anki notes, so it becomes possible to
+use spaced repetition method to learn Obsidian notes.
+
+Each run of ObsidianToAnki application fully synchronizes Obsidian notes folder with Anki collection.
+
+The synchronization includes:
+- editing Anki note name if related Obsidian note was renamed
+- deleting Anki note if related Obsidian note was deleted
+- dropping learning progress for Anki note if related Obsidian note was edited
+- adding new Anki notes for new Obsidian notes
+"""
+
 from datetime import datetime
 import os
 
@@ -13,16 +26,19 @@ class File:
         self.folder = os.path.dirname(os.path.realpath(__file__))
 
     def check_existence(self):
+        """Checks the file existence."""
         filenames = os.walk(self.folder).__next__()[2]
         res = any(filename == self.name for filename in filenames)
         return res
 
     def update(self, content):
+        """Edits the file."""
         file = open(self.name, mode='w', encoding='cp1251')
         file.write(content)
         file.close()
 
     def get_content(self):
+        """Retrieves and returns the file content."""
         file = open(self.name, mode='r', encoding='utf-8')
         content = file.read()
         file.close()
@@ -40,9 +56,11 @@ if __name__ == '__main__':
     obs.parse_notes_stat_data()
 
     if sync_file_exists:
+        # Sync file exists -> detect Obsidian notes updates made since the last synchronization
         last_sync_date = sync_file.get_content()
         anki.parse_notes_data()
         obs.get_notes_changes(anki, last_sync_date)
+
         if obs.deleted_notes:
             notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.deleted_notes]
             anki.delete_notes(notes_ids, obs.deleted_notes)
@@ -71,7 +89,8 @@ if __name__ == '__main__':
             logger.info(f'С момента последней синхронизации не обнаружено никаких изменений.')
 
     else:
-        # Если синхронизаций ранее не проводилось --> создать доску и выгрузить туда карточки с названиями заметок
+        # No sync file -> create Anki deck and generate an Anki note for each Obsidian note with Obsidian note name as a
+        # front side content
         create_deck_result = anki.create_deck()
         notes_for_adding = anki.gen_notes_to_add(obs.notes_files_ids_for_notes_names)
         anki_added_notes = anki.add_notes(notes_for_adding, initial_adding=True)

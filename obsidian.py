@@ -1,10 +1,14 @@
 from datetime import datetime
 import os
 
-from configs import PATH_TO_OBSIDIAN
+try:
+    from configs import PATH_TO_OBSIDIAN_VAULT
+except ImportError:
+    exit('Do "cp config.py.default config.py" and set the PATH_TO_OBSIDIAN')
 
 
 class Obsidian:
+    """Obsidian notes data."""
 
     def __init__(self, logger):
         self.logger = logger
@@ -22,9 +26,10 @@ class Obsidian:
         self.edited_renamed_notes_old_names = set()
 
     def parse_notes_stat_data(self):
-        note_files = os.walk(PATH_TO_OBSIDIAN).__next__()[2]
+        """Parses Obsidian vault folder to glean up-to-date notes files data."""
+        note_files = os.walk(PATH_TO_OBSIDIAN_VAULT).__next__()[2]
         for note_file in note_files:
-            path_to_file = os.path.join(PATH_TO_OBSIDIAN, note_file)
+            path_to_file = os.path.join(PATH_TO_OBSIDIAN_VAULT, note_file)
 
             note_file_id = str(os.stat(path_to_file, follow_symlinks=False).st_ino)
             self.notes_files_ids.add(note_file_id)
@@ -38,6 +43,7 @@ class Obsidian:
             self.notes_names_for_mod_dates[note_modification_date] = note_name
 
     def get_notes_changes(self, anki, last_sync_date):
+        """Defines Obsidian notes changes happened after the last synchronization."""
         deleted_notes_files_ids = anki.notes_files_ids - self.notes_files_ids
         self.deleted_notes = [anki.notes_texts_for_notes_files_ids[file_id] for file_id in deleted_notes_files_ids]
 

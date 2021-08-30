@@ -4,6 +4,7 @@ import urllib.request
 
 
 class Anki:
+    """Anki notes collection."""
     DEFAULT_DECK_NAME = 'Obsidian'
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
@@ -28,12 +29,14 @@ class Anki:
         self.new_names_for_renamed_notes = {}
 
     def create_deck(self):
+        """Creates Anki deck."""
         params = {'deck': self.DEFAULT_DECK_NAME}
         command = 'createDeck'
         self.command_executor.run(command, params)
         self.logger.log_command_result(command)
 
     def gen_notes_to_add(self, files_ids_for_notes):
+        """Generates list with notes in format, which is acceptable for "Anki connect" to work with."""
         notes_to_add = []
         for note, file_id in files_ids_for_notes.items():
             note_content = deepcopy(self.NOTE_TEMPLATE)
@@ -43,6 +46,7 @@ class Anki:
         return notes_to_add
 
     def add_notes(self, notes, initial_adding=False):
+        """Adds received notes to Anki collection."""
         params = {'notes': notes}
         command = 'addNotes'
         result = self.command_executor.run(command, params)['result']
@@ -50,6 +54,7 @@ class Anki:
         return result
 
     def parse_notes_data(self):
+        """Parses Anki collection in order to retrieve existing notes data."""
         notes_ids = self._get_notes_ids()
         notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:
@@ -65,22 +70,27 @@ class Anki:
             self.notes_texts_for_notes_files_ids[note_file_id] = note_text
 
     def _get_notes_ids(self):
+        """Returns list with notes ids for all existing notes in the Anki collection."""
         params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
         notes_ids = self.command_executor.run('findNotes', params)['result']
         return notes_ids
 
     def get_notes_content(self, notes_ids):
+        """Returns list with Anki notes content for received notes ids."""
         params = {"notes": notes_ids}
         notes_content = self.command_executor.run('notesInfo', params)['result']
         return notes_content
 
     def delete_notes(self, notes_ids, notes_texts):
+        """Returns notes from Anki collection according to received notes ids."""
         params = {'notes': notes_ids}
         command = 'deleteNotes'
         self.command_executor.run(command, params)
         self.logger.log_command_result(command, notes_texts)
 
     def update_notes(self, notes_ids, notes_old_texts, notes_new_texts):
+        """Replace Anki note front side content with related Obsidian note new name for each Anki note, which id is in
+        received notes_ids."""
         notes_renamed = {}
         command = 'updateNoteFields'
         for note_id, note_old_text, note_new_text in zip(notes_ids, notes_old_texts, notes_new_texts):
@@ -95,6 +105,7 @@ class Anki:
         self.logger.log_command_result(command, notes_renamed)
 
     def drop_cards_progress(self, cards_ids, notes_texts):
+        """Drops learning progress for each card, which id is in received cards_ids."""
         params = {'cards': cards_ids}
         command = 'forgetCards'
         self.command_executor.run(command, params)
@@ -102,14 +113,17 @@ class Anki:
 
 
 class CommandExecutor:
+    """CommandExecutor is responsible for direct interaction with Anki local server."""
 
     def run(self, command, params):
+        """Runs the command executor."""
         json_bytes = self._get_json(command, params)
         response_result = self._send_request(json_bytes)
         return response_result
 
     @staticmethod
     def _get_json(command, params):
+        """Generates JSON using received command and parameters."""
         data = {'action': command, 'params': params, 'version': 6}
         data_json = json.dumps(data)
         data_json_bytes = data_json.encode('utf-8')
@@ -117,6 +131,7 @@ class CommandExecutor:
 
     @staticmethod
     def _send_request(json_bytes):
+        """Sends request to Anki local server and returns the response."""
         request_object = urllib.request.Request('http://localhost:8765', json_bytes)
         response = urllib.request.urlopen(request_object)
         response_dict = json.load(response)
