@@ -23,9 +23,11 @@ class Anki:
         self.notes_texts = set()
         self.notes_ids = set()
         self.notes_ids_for_notes_texts = {}
-        # self.cards_ids_for_notes_texts = {}
+        self.cards_ids_for_notes_texts = {}
+        self.cards_in_progress_texts = set()
         self.notes_files_ids = set()
         self.notes_texts_for_notes_files_ids = {}
+        self.intervals_for_notes_files_ids = {}
         self.new_names_for_renamed_notes = {}
 
     def create_deck(self):
@@ -69,17 +71,42 @@ class Anki:
             self.notes_files_ids.add(note_file_id)
             self.notes_texts_for_notes_files_ids[note_file_id] = note_text
 
+    def parse_cards_data(self):
+        cards_ids = self._get_cards_ids()
+        cards_content = self._get_cards_content(cards_ids)
+        for card_content in cards_content:
+            card_text = card_content['fields']['Лицевая сторона']['value']
+            card_id = card_content['cardId']
+            self.cards_ids_for_notes_texts[card_text] = card_id
+            self.cards_in_progress_texts.add(card_text) if card_content['interval'] else None
+            # note_id = card_content['note']
+            # due = card_content['due']
+            # interval = card_content['interval']
+            # print(f'{card_text}: {card_id}/{note_id}, due - {due}, interval - {interval}')
+
     def _get_notes_ids(self):
         """Returns list with notes ids for all existing notes in the Anki collection."""
         params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
         notes_ids = self.command_executor.run('findNotes', params)['result']
         return notes_ids
 
+    def _get_cards_ids(self):
+        """Returns list with notes ids for all existing notes in the Anki collection."""
+        params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
+        cards_ids = self.command_executor.run('findCards', params)['result']
+        return cards_ids
+
     def get_notes_content(self, notes_ids):
         """Returns list with Anki notes content for received notes ids."""
         params = {"notes": notes_ids}
         notes_content = self.command_executor.run('notesInfo', params)['result']
         return notes_content
+
+    def _get_cards_content(self, cards_ids):
+        params = {"cards": cards_ids}
+        command_executed = self.command_executor.run('cardsInfo', params)
+        cards_content = command_executed['result']
+        return cards_content
 
     def delete_notes(self, notes_ids, notes_texts):
         """Returns notes from Anki collection according to received notes ids."""

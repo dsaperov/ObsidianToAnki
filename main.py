@@ -59,33 +59,37 @@ if __name__ == '__main__':
         # Sync file exists -> detect Obsidian notes updates made since the last synchronization
         last_sync_date = sync_file.get_content()
         anki.parse_notes_data()
+        anki.parse_cards_data()
         obs.get_notes_changes(anki, last_sync_date)
 
-        if obs.deleted_notes:
-            notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.deleted_notes]
-            anki.delete_notes(notes_ids, obs.deleted_notes)
-        if obs.added_notes:
+        if obs.deleted_notes_names:
+            notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.deleted_notes_names]
+            anki.delete_notes(notes_ids, obs.deleted_notes_names)
+        if obs.added_notes_names:
             added_notes_files_ids_for_notes_names = {note_name: obs.notes_files_ids_for_notes_names[note_name] for
-                                                     note_name in obs.added_notes}
+                                                     note_name in obs.added_notes_names}
             notes_for_adding = anki.gen_notes_to_add(added_notes_files_ids_for_notes_names)
             anki.add_notes(notes_for_adding)
         if obs.renamed_notes_new_names:
             notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.renamed_notes_old_names]
             anki.update_notes(notes_ids, obs.renamed_notes_old_names, obs.renamed_notes_new_names)
 
-        edited_notes = list(obs.edited_non_renamed_notes | obs.edited_renamed_notes_old_names)
-        if edited_notes:
-            card_ids = [anki.notes_ids_for_notes_texts[note] for note in edited_notes]
-            if obs.edited_renamed_notes_old_names:
+        edited_notes = list(obs.edited_non_renamed_notes_names | obs.edited_renamed_notes_old_names)
+        cards_to_forget = [note for note in obs.edited_non_renamed_notes_names if note in anki.cards_in_progress_texts]
+        cards_to_forget_renamed = [note for note in obs.edited_renamed_notes_old_names if note in
+                                   anki.cards_in_progress_texts]
+        if cards_to_forget:
+            card_ids = [anki.cards_ids_for_notes_texts[card] for card in cards_to_forget]
+            if cards_to_forget_renamed:
                 obs_notes_new_names_for_old_names = dict(zip(obs.renamed_notes_old_names, obs.renamed_notes_new_names))
-                for i in range(len(edited_notes)):
-                    note = edited_notes[i]
-                    if note in obs.edited_renamed_notes_old_names:
-                        new_name = obs_notes_new_names_for_old_names[note]
-                        edited_notes[i] += f' (--> {new_name})'
-            anki.drop_cards_progress(card_ids, edited_notes)
+                for i in range(len(cards_to_forget_renamed)):
+                    note = cards_to_forget_renamed[i]
+                    new_name = obs_notes_new_names_for_old_names[note]
+                    cards_to_forget_renamed[i] += f' (--> {new_name})'
+            cards_to_forget += cards_to_forget_renamed
+            anki.drop_cards_progress(card_ids, cards_to_forget)
 
-        if not any([obs.deleted_notes, obs.added_notes, obs.renamed_notes_new_names, edited_notes]):
+        if not any([obs.deleted_notes_names, obs.added_notes_names, obs.renamed_notes_new_names, edited_notes]):
             logger.info(f'С момента последней синхронизации не обнаружено никаких изменений.')
 
     else:
