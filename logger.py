@@ -56,9 +56,14 @@ class Logger(logging.Logger):
             log_text += f'- "{note_old_text}" --> "{note_new_text}"' + '\n'
         self.info(log_text)
 
-    def _log_drop_cards_progress_command_result(self, edited_notes):
-        log_text = f'Поскольку некоторые заметки в Obsidian были изменены (всего {len(edited_notes)}), для ' \
+    def _log_drop_cards_progress_command_result(self, edited_notes, notes_new_names_for_old_names):
+        anki_texts_ = edited_notes['renamed']
+        if edited_renamed_notes:
+
+        # edited_notes_count = sum(len(notes) for notes in edited_notes.values())
+        log_text = f'Поскольку некоторые заметки в Obsidian были изменены (всего {edited_notes_count}), для ' \
                    f'соответствующих им карт был сброшен прогресс:' + '\n'
+
         for note in edited_notes:
             log_text += f'- {note}' + '\n'
         self.info(log_text)

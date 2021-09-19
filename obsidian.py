@@ -19,7 +19,7 @@ class Obsidian:
         self.deleted_notes_names = set()
         self.added_notes_names = set()
         self.notes_new_names_for_old_names = {}
-        self.edited_notes_names = defaultdict(set)
+        self.edited_notes = defaultdict(set)
         # self.renamed_notes_new_names = []
         # self.renamed_notes_old_names = []
         # self.edited_non_renamed_notes_names = set()
@@ -55,22 +55,18 @@ class Obsidian:
         for note_name, note_data in self.notes_data.items():
             mod_date = note_data['modification_date']
             note_file_id = self.notes_data[note_name]['file_id']
-            # note_file_id = self.notes_files_ids_for_notes_names[note_name]
             if note_file_id in anki_notes_files_ids:
-                anki_notes_texts = anki.ids_for_anki_texts.keys()
-                if note_name in anki_notes_texts:
-                    if mod_date >= last_sync_date:
-                        self.edited_notes_names['non_renamed'].add(note_name)
-                        # self.edited_non_renamed_notes_names.add(note_name)
-                else:
-                    note_old_name = anki.notes_files_data[note_file_id]['note_text']
-                    # note_old_name = anki.notes_texts_for_notes_files_ids[note_file_id]
-                    self.notes_new_names_for_old_names[note_old_name] = note_name
-                    # self.renamed_notes_old_names.append(note_old_name)
-                    # self.renamed_notes_new_names.append(note_name)
-                    if mod_date >= last_sync_date:
-                        self.edited_notes_names['renamed_old'].add(note_old_name)
-                        # self.edited_renamed_notes_old_names.add(note_old_name)
+                if mod_date >= last_sync_date:
+                    self.edited_notes.add(note_name)
+                # anki_notes_texts = anki.ids_for_texts.keys()
+                # if note_name in anki_notes_texts:
+                #     if mod_date >= last_sync_date:
+                #         self.edited_notes['non_renamed'].add(note_name)
+                # else:
+                #     note_old_name = anki.notes_files_data[note_file_id]['note_text']
+                #     self.notes_new_names_for_old_names[note_old_name] = note_name
+                #     if mod_date >= last_sync_date:
+                #         self.edited_notes['renamed'].add(note_old_name)
             else:
                 self.added_notes_names.add(note_name)
 
