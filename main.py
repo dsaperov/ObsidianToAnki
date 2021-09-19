@@ -64,43 +64,44 @@ if __name__ == '__main__':
         # Sync file exists -> detect Obsidian notes updates made since the last synchronization
         last_sync_date = sync_file.get_content()
         anki.parse_notes_data()
+        anki.parse_cards_data()
         obs.get_notes_changes(anki, last_sync_date)
 
-        if obs.deleted_notes:
-            notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.deleted_notes]
-            anki.delete_notes(notes_ids, obs.deleted_notes)
-        if obs.added_notes:
-            added_notes_files_ids_for_notes_names = {note_name: obs.notes_files_ids_for_notes_names[note_name] for
-                                                     note_name in obs.added_notes}
+        if obs.deleted_notes_names:
+            notes_ids = [anki.ids_for_texts[note_name]['note_id'] for note_name in obs.deleted_notes_names]
+            anki.delete_notes(notes_ids, obs.deleted_notes_names)
+
+        if obs.added_notes_names:
+            added_notes_files_ids_for_notes_names = {note_name: obs.notes_data[note_name]['file_id'] for note_name in
+                                                     obs.added_notes_names}
             notes_for_adding = anki.gen_notes_to_add(added_notes_files_ids_for_notes_names)
             anki.add_notes(notes_for_adding)
-        if obs.renamed_notes_new_names:
-            notes_ids = [anki.notes_ids_for_notes_texts[note] for note in obs.renamed_notes_old_names]
-            anki.update_notes(notes_ids, obs.renamed_notes_old_names, obs.renamed_notes_new_names)
 
-        edited_notes = list(obs.edited_non_renamed_notes | obs.edited_renamed_notes_old_names)
-        if edited_notes:
-            card_ids = [anki.notes_ids_for_notes_texts[note] for note in edited_notes]
-            if obs.edited_renamed_notes_old_names:
-                obs_notes_new_names_for_old_names = dict(zip(obs.renamed_notes_old_names, obs.renamed_notes_new_names))
-                for i in range(len(edited_notes)):
-                    note = edited_notes[i]
-                    if note in obs.edited_renamed_notes_old_names:
-                        new_name = obs_notes_new_names_for_old_names[note]
-                        edited_notes[i] += f' (--> {new_name})'
-            anki.drop_cards_progress(card_ids, edited_notes)
+        obs_renamed_notes_new_names = obs.notes_new_names_for_old_names.values()
+        if obs_renamed_notes_new_names:
+            obs_renamed_notes_old_names = obs.notes_new_names_for_old_names.keys()
+            notes_ids = [anki.ids_for_texts[note_name]['note_id'] for note_name in obs_renamed_notes_old_names]
+            anki.update_notes(notes_ids, obs_renamed_notes_old_names, obs_renamed_notes_new_names)
 
-        if not any([obs.deleted_notes, obs.added_notes, obs.renamed_notes_new_names, edited_notes]):
+        obs_edited_notes_in_progress = obs.edited_notes_names & anki.cards_in_progress_texts
+        if obs_edited_notes_in_progress:
+            cards_ids = [anki.ids_for_texts[note_name]['card_id'] for note_name in obs_edited_notes_in_progress]
+            anki.relearn_cards(cards_ids, obs_edited_notes_in_progress, obs.notes_new_names_for_old_names)
+
+        if not any([obs.deleted_notes_names, obs.added_notes_names, obs_renamed_notes_new_names,
+                    obs_edited_notes_in_progress]):
             logger.info(f'С момента последней синхронизации не обнаружено никаких изменений.')
 
     else:
         # No sync file -> create Anki deck and generate an Anki note for each Obsidian note with Obsidian note name as a
         # front side content
         create_deck_result = anki.create_deck()
-        notes_for_adding = anki.gen_notes_to_add(obs.notes_files_ids_for_notes_names)
+        files_ids_for_notes = {note: note_data['file_id'] for note, note_data in obs.notes_data.items()}
+        notes_for_adding = anki.gen_notes_to_add(files_ids_for_notes)
         anki_added_notes = anki.add_notes(notes_for_adding, initial_adding=True)
         if not any(anki_added_notes) is True:
-            logger.info(f'Синхронизация не была проведена. Возможно, в указанном каталоге отсутствуют заметки Obsidian.')
+            logger.info(f'Синхронизация не была проведена. Возможно, в указанном каталоге отсутствуют заметки Obsidian.'
+                        )
             exit()
 
     sync_file.update(new_sync_date)

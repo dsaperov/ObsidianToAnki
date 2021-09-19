@@ -1,3 +1,4 @@
+from collections import defaultdict
 from copy import deepcopy
 import json
 import urllib.request
@@ -20,13 +21,9 @@ class Anki:
         self.command_executor = command_executor
         self.logger = logger
 
-        self.notes_texts = set()
-        self.notes_ids = set()
-        self.notes_ids_for_notes_texts = {}
-        # self.cards_ids_for_notes_texts = {}
-        self.notes_files_ids = set()
-        self.notes_texts_for_notes_files_ids = {}
-        self.new_names_for_renamed_notes = {}
+        self.ids_for_texts = defaultdict(dict)
+        self.note_texts_for_file_ids = {}
+        self.cards_in_progress_texts = set()
 
     def create_deck(self):
         """Creates Anki deck."""
@@ -59,15 +56,21 @@ class Anki:
         notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
-            self.notes_texts.add(note_text)
 
             note_id = note_content['noteId']
-            self.notes_ids.add(note_id)
-            self.notes_ids_for_notes_texts[note_text] = note_id
+            self.ids_for_texts[note_text]['note_id'] = note_id
 
             note_file_id = note_content['tags'][0]
-            self.notes_files_ids.add(note_file_id)
-            self.notes_texts_for_notes_files_ids[note_file_id] = note_text
+            self.note_texts_for_file_ids[note_file_id] = note_text
+
+    def parse_cards_data(self):
+        cards_ids = self._get_cards_ids()
+        cards_content = self._get_cards_content(cards_ids)
+        for card_content in cards_content:
+            card_text = card_content['fields']['Лицевая сторона']['value']
+            card_id = card_content['cardId']
+            self.ids_for_texts[card_text]['card_id'] = card_id
+            self.cards_in_progress_texts.add(card_text) if card_content['interval'] else None
 
     def _get_notes_ids(self):
         """Returns list with notes ids for all existing notes in the Anki collection."""
@@ -75,11 +78,23 @@ class Anki:
         notes_ids = self.command_executor.run('findNotes', params)['result']
         return notes_ids
 
+    def _get_cards_ids(self):
+        """Returns list with notes ids for all existing notes in the Anki collection."""
+        params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
+        cards_ids = self.command_executor.run('findCards', params)['result']
+        return cards_ids
+
     def get_notes_content(self, notes_ids):
         """Returns list with Anki notes content for received notes ids."""
         params = {"notes": notes_ids}
         notes_content = self.command_executor.run('notesInfo', params)['result']
         return notes_content
+
+    def _get_cards_content(self, cards_ids):
+        params = {"cards": cards_ids}
+        command_executed = self.command_executor.run('cardsInfo', params)
+        cards_content = command_executed['result']
+        return cards_content
 
     def delete_notes(self, notes_ids, notes_texts):
         """Returns notes from Anki collection according to received notes ids."""
@@ -89,8 +104,10 @@ class Anki:
         self.logger.log_command_result(command, notes_texts)
 
     def update_notes(self, notes_ids, notes_old_texts, notes_new_texts):
-        """Replace Anki note front side content with related Obsidian note new name for each Anki note, which id is in
-        received notes_ids."""
+        """
+        Replace Anki note front side content with related Obsidian note new name for each Anki note, which id is in
+        received notes_ids.
+        """
         notes_renamed = {}
         command = 'updateNoteFields'
         for note_id, note_old_text, note_new_text in zip(notes_ids, notes_old_texts, notes_new_texts):
@@ -104,12 +121,12 @@ class Anki:
 
         self.logger.log_command_result(command, notes_renamed)
 
-    def drop_cards_progress(self, cards_ids, notes_texts):
-        """Drops learning progress for each card, which id is in received cards_ids."""
+    def relearn_cards(self, cards_ids, *obs_notes_data):
+        """Switches status to "Relearn" for each card, which id is in received cards_ids."""
         params = {'cards': cards_ids}
-        command = 'forgetCards'
+        command = "relearnCards"
         self.command_executor.run(command, params)
-        self.logger.log_command_result(command, notes_texts)
+        self.logger.log_command_result(command, *obs_notes_data)
 
 
 class CommandExecutor:
