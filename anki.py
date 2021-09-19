@@ -1,4 +1,5 @@
-from copy import deepcopy
+from collections import defaultdict
+from copy import copy, deepcopy
 import json
 import urllib.request
 
@@ -20,15 +21,9 @@ class Anki:
         self.command_executor = command_executor
         self.logger = logger
 
-        self.notes_texts = set()
-        self.notes_ids = set()
-        self.notes_ids_for_notes_texts = {}
-        self.cards_ids_for_notes_texts = {}
+        self.ids_for_anki_texts = {}
         self.cards_in_progress_texts = set()
-        self.notes_files_ids = set()
-        self.notes_texts_for_notes_files_ids = {}
-        self.intervals_for_notes_files_ids = {}
-        self.new_names_for_renamed_notes = {}
+        self.notes_files_data = {}
 
     def create_deck(self):
         """Creates Anki deck."""
@@ -61,15 +56,14 @@ class Anki:
         notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
-            self.notes_texts.add(note_text)
 
             note_id = note_content['noteId']
-            self.notes_ids.add(note_id)
-            self.notes_ids_for_notes_texts[note_text] = note_id
+            self.ids_for_anki_texts[note_text] = {}
+            self.ids_for_anki_texts[note_text]['note_id'] = note_id
 
             note_file_id = note_content['tags'][0]
-            self.notes_files_ids.add(note_file_id)
-            self.notes_texts_for_notes_files_ids[note_file_id] = note_text
+            self.notes_files_data[note_file_id] = {}
+            self.notes_files_data[note_file_id]['note_text'] = note_text
 
     def parse_cards_data(self):
         cards_ids = self._get_cards_ids()
@@ -77,7 +71,7 @@ class Anki:
         for card_content in cards_content:
             card_text = card_content['fields']['Лицевая сторона']['value']
             card_id = card_content['cardId']
-            self.cards_ids_for_notes_texts[card_text] = card_id
+            self.ids_for_anki_texts[card_text]['card_id'] = card_id
             self.cards_in_progress_texts.add(card_text) if card_content['interval'] else None
             # note_id = card_content['note']
             # due = card_content['due']
@@ -131,10 +125,53 @@ class Anki:
 
         self.logger.log_command_result(command, notes_renamed)
 
+    def filter_out_obs_notes_for_card_progress(self, obs_edited_notes):
+        filtered_obs_notes = defaultdict(set)
+        for note_type, note_names in obs_edited_notes.items():
+            filtered_obs_notes[note_type] = note_names & self.cards_in_progress_texts
+        return filtered_obs_notes
+
+    def get_cards_data(self, edited_obs_note_names, obs_notes_new_names_for_old_names):
+        cards_ids = [self.ids_for_anki_texts[text]['card_id'] for note_names in edited_obs_note_names.values() for text
+                     in note_names]
+        edited_obs_note_names['renamed_old'] = list(edited_obs_note_names['renamed_old'])
+        obs_edited_renamed_note_old_names = edited_obs_note_names['renamed_old']
+        if obs_edited_renamed_note_old_names:
+            self._modify_anki_texts(obs_edited_renamed_note_old_names,
+                                    obs_notes_new_names_for_old_names)
+        card_texts = set(text for texts_group in edited_obs_note_names.values() for text in texts_group)
+        return cards_ids, card_texts
+
+        # edited_non_renamed_notes_anki_texts = obs_edited_non_renamed_notes_names &
+        #
+        #     [note_name for note_name in obs_edited_non_renamed_notes_names
+        #                                        if note_name in self.cards_in_progress_texts]
+        # edited_renamed_notes_anki_texts = [note_name for note_name in obs_edited_renamed_notes_old_names
+        #                                    if note_name in self.obs_edited_notes_in_progress]
+        # edited_notes_anki_texts = edited_non_renamed_notes_anki_texts + edited_renamed_notes_anki_texts
+        # cards_ids_for_edited_notes = [self.ids_for_anki_texts[text]['card_id'] for text in edited_notes_anki_texts]
+        #
+        # if edited_renamed_notes_anki_texts:
+        #     edited_renamed_notes_anki_texts_changes = self._get_anki_texts_modified(edited_renamed_notes_anki_texts,
+        #                                                                             obs_notes_new_names_for_old_names)
+        #     edited_notes_anki_texts = edited_non_renamed_notes_anki_texts + edited_renamed_notes_anki_texts_changes
+        #
+        # return cards_ids_for_edited_notes, edited_notes_anki_texts
+
+    @staticmethod
+    def _modify_anki_texts(obs_notes_old_names, obs_notes_new_names_for_old_names):
+        anki_texts = obs_notes_old_names
+        # anki_texts = copy(obs_notes_old_names)
+        for i in range(len(obs_notes_old_names)):
+            note_old_name = obs_notes_old_names[i]
+            note_new_name = obs_notes_new_names_for_old_names[note_old_name]
+            anki_texts[i] += f' (--> {note_new_name})'
+
     def drop_cards_progress(self, cards_ids, notes_texts):
         """Drops learning progress for each card, which id is in received cards_ids."""
         params = {'cards': cards_ids}
-        command = 'forgetCards'
+        command = "relearnCards"
+        # command = 'forgetCards'
         self.command_executor.run(command, params)
         self.logger.log_command_result(command, notes_texts)
 
