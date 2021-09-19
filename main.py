@@ -78,20 +78,13 @@ if __name__ == '__main__':
             notes_ids = [anki.ids_for_texts[note_name]['note_id'] for note_name in obs_renamed_notes_old_names]
             anki.update_notes(notes_ids, obs_renamed_notes_old_names, obs_renamed_notes_new_names)
 
-        obs_edited_notes_in_progress = {note_type: note_names & anki.cards_in_progress_texts for
-                                        note_type, note_names in obs.edited_notes.items()}
+        obs_edited_notes_in_progress = obs.edited_notes_names & anki.cards_in_progress_texts
         if obs_edited_notes_in_progress:
-            cards_ids = [anki.ids_for_texts[note_name]['card_id'] for note_names in
-                         obs_edited_notes_in_progress.values() for note_name in note_names]
+            cards_ids = [anki.ids_for_texts[note_name]['card_id'] for note_name in obs_edited_notes_in_progress]
             anki.relearn_cards(cards_ids, obs_edited_notes_in_progress, obs.notes_new_names_for_old_names)
 
-            # cards_ids, cards_texts = anki.get_cards_data(obs_edited_notes_in_progress,
-            #                                              obs.notes_new_names_for_old_names)
-            # anki.relearn_cards(cards_ids, cards_texts)
-
-        if not any(
-                [obs.deleted_notes_names, obs.added_notes_names, obs_renamed_notes_new_names,
-                 obs_edited_notes_in_progress]):
+        if not any([obs.deleted_notes_names, obs.added_notes_names, obs_renamed_notes_new_names,
+                    obs_edited_notes_in_progress]):
             logger.info(f'С момента последней синхронизации не обнаружено никаких изменений.')
 
     else:

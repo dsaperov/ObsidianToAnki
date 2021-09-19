@@ -26,7 +26,7 @@ class Logger(logging.Logger):
         elif command == 'updateNoteFields':
             self._log_update_notes_command_result(*args)
         else:
-            self._log_drop_cards_progress_command_result(*args)
+            self._log_relearn_cards_command_result(*args)
 
     def _log_add_notes_command_result(self, command_result, expected_added_notes_count, initial_adding, anki):
         command_result_processed = ['added' if note_id else 'fail' for note_id in command_result]
@@ -56,17 +56,27 @@ class Logger(logging.Logger):
             log_text += f'- "{note_old_text}" --> "{note_new_text}"' + '\n'
         self.info(log_text)
 
-    def _log_drop_cards_progress_command_result(self, edited_notes, notes_new_names_for_old_names):
-        anki_texts_ = edited_notes['renamed']
-        if edited_renamed_notes:
-
-        # edited_notes_count = sum(len(notes) for notes in edited_notes.values())
-        log_text = f'Поскольку некоторые заметки в Obsidian были изменены (всего {edited_notes_count}), для ' \
-                   f'соответствующих им карт был сброшен прогресс:' + '\n'
-
-        for note in edited_notes:
+    def _log_relearn_cards_command_result(self, obs_edited_notes_in_progress_names, obs_notes_new_names_for_old_names):
+        relearned_cards_texts = list(obs_edited_notes_in_progress_names)
+        self._modify_cards_texts(relearned_cards_texts, obs_notes_new_names_for_old_names)
+        log_text = f'Поскольку некоторые заметки в Obsidian были изменены, соответствующие им изученные карты ' \
+                   f'(всего {len(relearned_cards_texts)}) назначены для повторного изучения:' + '\n'
+        for note in relearned_cards_texts:
             log_text += f'- {note}' + '\n'
         self.info(log_text)
+
+    @staticmethod
+    def _modify_cards_texts(cards_texts, obs_notes_new_names_for_old_names):
+        """
+        Adds Obsidian notes new names to old names in the relearned cards list, which will be displayed to user via
+        terminal.
+        """
+        obs_renamed_notes_names = obs_notes_new_names_for_old_names.keys()
+        for i in range(len(cards_texts)):
+            card_text = cards_texts[i]
+            if card_text in obs_renamed_notes_names:
+                card_new_text = obs_notes_new_names_for_old_names[card_text]
+                cards_texts[i] += f' (--> {card_new_text})'
 
 
 logger = Logger('basic_logger')

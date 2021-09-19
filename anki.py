@@ -1,5 +1,5 @@
 from collections import defaultdict
-from copy import copy, deepcopy
+from copy import deepcopy
 import json
 import urllib.request
 
@@ -21,9 +21,9 @@ class Anki:
         self.command_executor = command_executor
         self.logger = logger
 
-        self.ids_for_texts = {}
+        self.ids_for_texts = defaultdict(dict)
+        self.note_texts_for_file_ids = {}
         self.cards_in_progress_texts = set()
-        self.notes_files_data = {}
 
     def create_deck(self):
         """Creates Anki deck."""
@@ -58,12 +58,10 @@ class Anki:
             note_text = note_content['fields']['Лицевая сторона']['value']
 
             note_id = note_content['noteId']
-            self.ids_for_texts[note_text] = {}
             self.ids_for_texts[note_text]['note_id'] = note_id
 
             note_file_id = note_content['tags'][0]
-            self.notes_files_data[note_file_id] = {}
-            self.notes_files_data[note_file_id]['note_text'] = note_text
+            self.note_texts_for_file_ids[note_file_id] = note_text
 
     def parse_cards_data(self):
         cards_ids = self._get_cards_ids()
@@ -73,10 +71,6 @@ class Anki:
             card_id = card_content['cardId']
             self.ids_for_texts[card_text]['card_id'] = card_id
             self.cards_in_progress_texts.add(card_text) if card_content['interval'] else None
-            # note_id = card_content['note']
-            # due = card_content['due']
-            # interval = card_content['interval']
-            # print(f'{card_text}: {card_id}/{note_id}, due - {due}, interval - {interval}')
 
     def _get_notes_ids(self):
         """Returns list with notes ids for all existing notes in the Anki collection."""
@@ -125,34 +119,8 @@ class Anki:
 
         self.logger.log_command_result(command, notes_renamed)
 
-    def get_cards_data(self, obs_edited_notes, obs_notes_new_names_for_old_names):
-        cards_ids, card_texts = [], []
-        for note_names in obs_edited_notes.values():
-            for note_name in note_names:
-                cards_ids.append(self.ids_for_texts[note_name]['card_id'])
-                card_texts.append()
-        #              in note_names
-        # cards_ids = [self.ids_for_texts[note_name]['card_id'] for note_names in obs_edited_notes.values() for note_name
-        #              in note_names]
-        # if 'renamed' in obs_edited_notes:
-        #     obs_edited_renamed_note_old_names = obs_edited_notes['renamed']
-        #     if obs_edited_renamed_note_old_names:
-        #         self._modify_anki_texts(obs_edited_renamed_note_old_names,
-        #                                 obs_notes_new_names_for_old_names)
-        # card_texts = set(note_name for note_names in obs_edited_notes.values() for note_name in note_names)
-        # return cards_ids, card_texts
-
-    @staticmethod
-    def _modify_anki_texts(obs_notes_old_names, obs_notes_new_names_for_old_names):
-        anki_texts = obs_notes_old_names
-        # anki_texts = copy(obs_notes_old_names)
-        for i in range(len(obs_notes_old_names)):
-            note_old_name = obs_notes_old_names[i]
-            note_new_name = obs_notes_new_names_for_old_names[note_old_name]
-            anki_texts[i] += f' (--> {note_new_name})'
-
     def relearn_cards(self, cards_ids, *obs_notes_data):
-        """Drops learning progress for each card, which id is in received cards_ids."""
+        """Switches status to "Relearn" for each card, which id is in received cards_ids."""
         params = {'cards': cards_ids}
         command = "relearnCards"
         self.command_executor.run(command, params)
