@@ -104,8 +104,10 @@ class Anki:
         self.logger.log_command_result(command, notes_texts)
 
     def update_notes(self, notes_ids, notes_old_texts, notes_new_texts):
-        """Replace Anki note front side content with related Obsidian note new name for each Anki note, which id is in
-        received notes_ids."""
+        """
+        Replace Anki note front side content with related Obsidian note new name for each Anki note, which id is in
+        received notes_ids.
+        """
         notes_renamed = {}
         command = 'updateNoteFields'
         for note_id, note_old_text, note_new_text in zip(notes_ids, notes_old_texts, notes_new_texts):
