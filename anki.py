@@ -6,7 +6,8 @@ import urllib.request
 
 class Anki:
     """Anki notes collection."""
-    DEFAULT_DECK_NAME = 'Obsidian'
+    DEFAULT_DECK_NAME = 'Obsidian_pending'
+    All_DECK_NAMES = [DEFAULT_DECK_NAME, 'Obsidian_new', 'Obsidian_repeating']
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
         'modelName': 'Базовый',
@@ -16,6 +17,7 @@ class Anki:
         },
         'tags': []
     }
+    FIND_IDS_COMMANDS = {'notes': 'findNotes', 'cards': 'findCards'}
 
     def __init__(self, command_executor, logger):
         self.command_executor = command_executor
@@ -25,12 +27,13 @@ class Anki:
         self.note_texts_for_file_ids = {}
         self.cards_in_progress_texts = set()
 
-    def create_deck(self):
-        """Creates Anki deck."""
-        params = {'deck': self.DEFAULT_DECK_NAME}
-        command = 'createDeck'
-        self.command_executor.run(command, params)
-        self.logger.log_command_result(command)
+    def create_decks(self):
+        """Creates Anki decks."""
+        for deck_name in self.All_DECK_NAMES:
+            params = {'deck': deck_name}
+            command = 'createDeck'
+            self.command_executor.run(command, params)
+            self.logger.log_command_result(command, deck_name)
 
     def gen_notes_to_add(self, files_ids_for_notes):
         """Generates list with notes in format, which is acceptable for "Anki connect" to work with."""
@@ -52,7 +55,7 @@ class Anki:
 
     def parse_notes_data(self):
         """Parses Anki collection in order to retrieve existing notes data."""
-        notes_ids = self._get_notes_ids()
+        notes_ids = self._get_ids('notes')
         notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
@@ -64,7 +67,7 @@ class Anki:
             self.note_texts_for_file_ids[note_file_id] = note_text
 
     def parse_cards_data(self):
-        cards_ids = self._get_cards_ids()
+        cards_ids = self._get_ids('cards')
         cards_content = self._get_cards_content(cards_ids)
         for card_content in cards_content:
             card_text = card_content['fields']['Лицевая сторона']['value']
@@ -72,17 +75,17 @@ class Anki:
             self.ids_for_texts[card_text]['card_id'] = card_id
             self.cards_in_progress_texts.add(card_text) if card_content['interval'] else None
 
-    def _get_notes_ids(self):
-        """Returns list with notes ids for all existing notes in the Anki collection."""
-        params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
-        notes_ids = self.command_executor.run('findNotes', params)['result']
-        return notes_ids
-
-    def _get_cards_ids(self):
-        """Returns list with notes ids for all existing notes in the Anki collection."""
-        params = {'query': f'deck:{self.DEFAULT_DECK_NAME}'}
-        cards_ids = self.command_executor.run('findCards', params)['result']
-        return cards_ids
+    def _get_ids(self, objects_type):
+        """
+        Returns list with ids for all existing objects of specified type in the Anki collection.
+        :param str objects_type: type of objects which ids should be returned. It can be either 'notes' or 'cards'.
+        """
+        all_ids = []
+        for deck_name in self.All_DECK_NAMES:
+            params = {'query': f'deck:{deck_name}'}
+            ids_by_deck = self.command_executor.run(self.FIND_IDS_COMMANDS[objects_type], params)['result']
+            all_ids.extend(ids_by_deck)
+        return all_ids
 
     def get_notes_content(self, notes_ids):
         """Returns list with Anki notes content for received notes ids."""
@@ -91,6 +94,7 @@ class Anki:
         return notes_content
 
     def _get_cards_content(self, cards_ids):
+        """Returns list with Anki cards content for received cards ids."""
         params = {"cards": cards_ids}
         command_executed = self.command_executor.run('cardsInfo', params)
         cards_content = command_executed['result']

@@ -18,7 +18,8 @@ class Logger(logging.Logger):
     def log_command_result(self, command, *args):
         """Receives command name and calls related logging method."""
         if command == 'createDeck':
-            self.info(f'Создана колода {Anki.DEFAULT_DECK_NAME}')
+            deck_name = args[0]
+            self.info(f'Создана колода {deck_name}')
         elif command == 'addNotes':
             self._log_add_notes_command_result(*args)
         elif command == 'deleteNotes':

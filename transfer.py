@@ -14,7 +14,7 @@ class AnkiTransfer(Anki):
         self.note_texts_for_file_ids = {}
 
     def parse_notes_data(self):
-        notes_ids = self._get_notes_ids()
+        notes_ids = self._get_ids('notes')
 
         notes_content = self.get_notes_content(notes_ids)
         for note_content in notes_content:

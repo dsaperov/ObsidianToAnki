@@ -90,7 +90,7 @@ if __name__ == '__main__':
     else:
         # No sync file -> create Anki deck and generate an Anki note for each Obsidian note with Obsidian note name as a
         # front side content
-        create_deck_result = anki.create_deck()
+        create_deck_result = anki.create_decks()
         files_ids_for_notes = {note: note_data['file_id'] for note, note_data in obs.notes_data.items()}
         notes_for_adding = anki.gen_notes_to_add(files_ids_for_notes)
         anki_added_notes = anki.add_notes(notes_for_adding, initial_adding=True)
