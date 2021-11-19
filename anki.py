@@ -17,7 +17,16 @@ class Anki:
         },
         'tags': []
     }
-    FIND_IDS_COMMANDS = {'notes': 'findNotes', 'cards': 'findCards'}
+    COMMANDS_FOR_OBJECTS_TYPES = {
+        'notes': {
+            'get_ids': 'findNotes',
+            'get_content': 'notesInfo'
+        },
+        'cards': {
+            'get_ids': 'findCards',
+            'get_content': 'cardsInfo'
+        }
+    }
 
     def __init__(self, command_executor, logger):
         self.command_executor = command_executor
@@ -55,8 +64,9 @@ class Anki:
 
     def parse_notes_data(self):
         """Parses Anki collection in order to retrieve existing notes data."""
-        notes_ids = self._get_ids('notes')
-        notes_content = self.get_notes_content(notes_ids)
+        parsing_objects_type = 'notes'
+        notes_ids = self._get_ids(parsing_objects_type)
+        notes_content = self.get_content(notes_ids, parsing_objects_type)
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
 
@@ -67,8 +77,9 @@ class Anki:
             self.note_texts_for_file_ids[note_file_id] = note_text
 
     def parse_cards_data(self):
-        cards_ids = self._get_ids('cards')
-        cards_content = self._get_cards_content(cards_ids)
+        parsing_objects_type = 'cards'
+        cards_ids = self._get_ids(parsing_objects_type)
+        cards_content = self.get_content(cards_ids, parsing_objects_type)
         for card_content in cards_content:
             card_text = card_content['fields']['Лицевая сторона']['value']
             card_id = card_content['cardId']
@@ -81,24 +92,22 @@ class Anki:
         :param str objects_type: type of objects which ids should be returned. It can be either 'notes' or 'cards'.
         """
         all_ids = []
+        command = self.COMMANDS_FOR_OBJECTS_TYPES[objects_type]['get_ids']
         for deck_name in self.All_DECK_NAMES:
             params = {'query': f'deck:{deck_name}'}
-            ids_by_deck = self.command_executor.run(self.FIND_IDS_COMMANDS[objects_type], params)['result']
+            ids_by_deck = self.command_executor.run(command, params)['result']
             all_ids.extend(ids_by_deck)
         return all_ids
 
-    def get_notes_content(self, notes_ids):
-        """Returns list with Anki notes content for received notes ids."""
-        params = {"notes": notes_ids}
-        notes_content = self.command_executor.run('notesInfo', params)['result']
-        return notes_content
-
-    def _get_cards_content(self, cards_ids):
-        """Returns list with Anki cards content for received cards ids."""
-        params = {"cards": cards_ids}
-        command_executed = self.command_executor.run('cardsInfo', params)
-        cards_content = command_executed['result']
-        return cards_content
+    def get_content(self, ids, objects_type):
+        """
+        Returns list with content for received objects ids.
+        :param str objects_type: type of objects which ids were passed. It can be either 'notes' or 'cards'.
+        """
+        params = {objects_type: ids}
+        command = self.COMMANDS_FOR_OBJECTS_TYPES[objects_type]['get_content']
+        content = self.command_executor.run(command, params)['result']
+        return content
 
     def delete_notes(self, notes_ids, notes_texts):
         """Returns notes from Anki collection according to received notes ids."""

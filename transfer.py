@@ -16,7 +16,7 @@ class AnkiTransfer(Anki):
     def parse_notes_data(self):
         notes_ids = self._get_ids('notes')
 
-        notes_content = self.get_notes_content(notes_ids)
+        notes_content = self.get_content(notes_ids, 'notes')
         for note_content in notes_content:
             note_text = note_content['fields']['Лицевая сторона']['value']
             note_id = note_content['noteId']

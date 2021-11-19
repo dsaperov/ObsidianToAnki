@@ -39,7 +39,7 @@ class Logger(logging.Logger):
         if not initial_adding and added_notes_count:
             log_text += f'\nДобавленные карты:' + '\n'
             added_notes_ids = [note_id for note_id in command_result if note_id]
-            added_notes_content = anki.get_notes_content(added_notes_ids)
+            added_notes_content = anki.get_content(added_notes_ids, 'notes')
             for note_content in added_notes_content:
                 note_text = note_content['fields']['Лицевая сторона']['value']
                 log_text += f'- {note_text}' + '\n'
