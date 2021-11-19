@@ -28,6 +28,9 @@ class Obsidian:
             note_modification_date = datetime.fromtimestamp(os.path.getmtime(path_to_file))
             self.notes_data[note_name]['modification_date'] = note_modification_date
 
+        notes_data_sorted = sorted(self.notes_data.items(), key=lambda item: item[1]['modification_date'])
+        self.notes_data = dict(notes_data_sorted)
+
     def get_notes_changes(self, anki, last_sync_date):
         """Defines Obsidian notes changes happened after the last synchronization."""
         obs_files_ids = set(note_data['file_id'] for note_data in self.notes_data.values())
