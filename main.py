@@ -80,8 +80,8 @@ if __name__ == '__main__':
 
         obs_edited_notes_in_progress = obs.edited_notes_names & anki.cards_in_progress_texts
         if obs_edited_notes_in_progress:
-            cards_ids = [anki.ids_for_texts[note_name]['card_id'] for note_name in obs_edited_notes_in_progress]
-            anki.relearn_cards(cards_ids, obs_edited_notes_in_progress, obs.notes_new_names_for_old_names)
+            logger.log_obs_edited_notes_in_progress_found(sorted(list(obs_edited_notes_in_progress)),
+                                                          obs.notes_new_names_for_old_names)
 
         if not any([obs.deleted_notes_names, obs.added_notes_names, obs_renamed_notes_new_names,
                     obs_edited_notes_in_progress]):

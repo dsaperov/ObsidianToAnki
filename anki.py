@@ -6,8 +6,10 @@ import urllib.request
 
 class Anki:
     """Anki notes collection."""
-    DEFAULT_DECK_NAME = 'Obsidian_pending'
-    All_DECK_NAMES = [DEFAULT_DECK_NAME, 'Obsidian_new', 'Obsidian_repeating']
+    DEFAULT_DECK_NAME = 'F. Obs_default'
+    All_DECK_NAMES = [DEFAULT_DECK_NAME, 'A. Obs_new_review', 'B. Obs_new_retrieval', 'C. Obs_new_evaluation',
+                      'D. Obs_rep_retrieval', 'E. Obs_rep_evaluation', 'G. Obs_next_lvl',
+                      'H. Obsidian_not_for_learning']
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
         'modelName': 'Базовый',
@@ -94,7 +96,7 @@ class Anki:
         all_ids = []
         command = self.COMMANDS_FOR_OBJECTS_TYPES[objects_type]['get_ids']
         for deck_name in self.All_DECK_NAMES:
-            params = {'query': f'deck:{deck_name}'}
+            params = {'query': f'"deck:{deck_name}"'}
             ids_by_deck = self.command_executor.run(command, params)['result']
             all_ids.extend(ids_by_deck)
         return all_ids

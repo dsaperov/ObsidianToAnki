@@ -24,10 +24,8 @@ class Logger(logging.Logger):
             self._log_add_notes_command_result(*args)
         elif command == 'deleteNotes':
             self._log_delete_notes_command_result(*args)
-        elif command == 'updateNoteFields':
-            self._log_update_notes_command_result(*args)
         else:
-            self._log_relearn_cards_command_result(*args)
+            self._log_update_notes_command_result(*args)
 
     def _log_add_notes_command_result(self, command_result, expected_added_notes_count, initial_adding, anki):
         command_result_processed = ['added' if note_id else 'fail' for note_id in command_result]
@@ -57,20 +55,18 @@ class Logger(logging.Logger):
             log_text += f'- "{note_old_text}" --> "{note_new_text}"' + '\n'
         self.info(log_text)
 
-    def _log_relearn_cards_command_result(self, obs_edited_notes_in_progress_names, obs_notes_new_names_for_old_names):
-        relearned_cards_texts = list(obs_edited_notes_in_progress_names)
-        self._modify_cards_texts(relearned_cards_texts, obs_notes_new_names_for_old_names)
-        log_text = f'Поскольку некоторые заметки в Obsidian были изменены, соответствующие им изученные карты ' \
-                   f'(всего {len(relearned_cards_texts)}) назначены для повторного изучения:' + '\n'
-        for note in relearned_cards_texts:
+    def log_obs_edited_notes_in_progress_found(self, edited_notes_cards_texts, obs_notes_new_names_for_old_names):
+        self._modify_cards_texts(edited_notes_cards_texts, obs_notes_new_names_for_old_names)
+        log_text = f'Поскольку некоторые заметки в Obsidian были изменены, для соответствующих им изученных карт ' \
+                   f'(всего {len(edited_notes_cards_texts)}), возможно, следует сбросить прогресс.' + '\n'
+        for note in edited_notes_cards_texts:
             log_text += f'- {note}' + '\n'
         self.info(log_text)
 
     @staticmethod
     def _modify_cards_texts(cards_texts, obs_notes_new_names_for_old_names):
-        """
-        Adds Obsidian notes new names to old names in the relearned cards list, which will be displayed to user via
-        terminal.
+        """Receives list with Anki cards texts. Checks whether any related to them Obsidian notes were renamed and if
+        so, adds new names to old names in this list.
         """
         obs_renamed_notes_names = obs_notes_new_names_for_old_names.keys()
         for i in range(len(cards_texts)):
