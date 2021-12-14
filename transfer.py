@@ -49,11 +49,6 @@ class ObsidianTransfer(Obsidian):
             note_name = note_file[:-3]
             self.file_ids_for_note_names[note_name] = note_file_id
 
-    def print_parsed_data(self):
-        print('Актуальные file_id для Obsidian-заметок:')
-        for note_name, file_id in self.file_ids_for_note_names.items():
-            print(f'{note_name} - {file_id}')
-        print()
 
     @staticmethod
     def enumerate_notes(notes_names):
@@ -68,7 +63,6 @@ if __name__ == '__main__':
 
     anki_transfer.parse_notes_data()
     obsidian_transfer.parse_notes_stat_data()
-    obsidian_transfer.print_parsed_data()
 
     anki_notes_file_ids = set(anki_transfer.note_ids_for_file_ids.keys())
     obsidian_notes_file_ids = set(obsidian_transfer.file_ids_for_note_names.values())
