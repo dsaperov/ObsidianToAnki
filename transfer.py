@@ -49,7 +49,6 @@ class ObsidianTransfer(Obsidian):
             note_name = note_file[:-3]
             self.file_ids_for_note_names[note_name] = note_file_id
 
-
     @staticmethod
     def enumerate_notes(notes_names):
         notes_names_enumerated = {str(number): note_name for number, note_name in enumerate(notes_names, 1)}

@@ -8,7 +8,6 @@ from configs import DEFAULT_DECK_NAME, All_DECK_NAMES
 
 class Anki:
     """Anki notes collection."""
-
     NOTE_TEMPLATE = {
         'deckName': DEFAULT_DECK_NAME,
         'modelName': 'Базовый',
