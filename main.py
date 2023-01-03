@@ -1,16 +1,3 @@
-"""
-ObsidianToAnki is a console application, which turns Obsidian app notes names into Anki notes, so it becomes possible to
-use spaced repetition method to learn Obsidian notes.
-
-Each run of ObsidianToAnki application fully synchronizes Obsidian notes folder with Anki collection.
-
-The synchronization includes:
-- editing Anki note name if related Obsidian note was renamed
-- deleting Anki note if related Obsidian note was deleted
-- dropping learning progress for Anki note if related Obsidian note was edited
-- adding new Anki notes for new Obsidian notes
-"""
-
 from datetime import datetime
 import os
 
@@ -85,8 +72,8 @@ if __name__ == '__main__':
 
         obs_edited_notes_in_progress = obs.edited_notes_names & anki.cards_in_progress_texts
         if obs_edited_notes_in_progress:
-            cards_ids = [anki.ids_for_texts[note_name]['card_id'] for note_name in obs_edited_notes_in_progress]
-            anki.relearn_cards(cards_ids, obs_edited_notes_in_progress, obs.notes_new_names_for_old_names)
+            logger.log_obs_edited_notes_in_progress_found(sorted(list(obs_edited_notes_in_progress)),
+                                                          obs.notes_new_names_for_old_names)
 
         if not any([obs.deleted_notes_names, obs.added_notes_names, obs_renamed_notes_new_names,
                     obs_edited_notes_in_progress]):
@@ -95,7 +82,7 @@ if __name__ == '__main__':
     else:
         # No sync file -> create Anki deck and generate an Anki note for each Obsidian note with Obsidian note name as a
         # front side content
-        create_deck_result = anki.create_deck()
+        create_deck_result = anki.create_decks()
         files_ids_for_notes = {note: note_data['file_id'] for note, note_data in obs.notes_data.items()}
         notes_for_adding = anki.gen_notes_to_add(files_ids_for_notes)
         anki_added_notes = anki.add_notes(notes_for_adding, initial_adding=True)
