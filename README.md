@@ -19,4 +19,4 @@ In `configs.py`:
   creation, then do not modify this constant.
   
 ## Launching
-Run the program with `python main.py` and wait until the result of synchronization outputs to the console.
+Run the program with `python transfer.py & python main.py` and wait until the result of synchronization outputs to the console.
