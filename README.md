@@ -12,11 +12,13 @@ The synchronization includes:
 
 # Usage
 ## Configuration
-In `configs.py`:
-- specify the path to Obsidian vault folder in `PATH_TO_OBSIDIAN_VAULT` constant.
-- specify a name for default deck in `DEFAULT_DECK_NAME` constant or leave the default value ("Obsidian").
-- specify other deck names in `All_DECK_NAMES` constant. Use comma as a separator. If there is no need for extra decks 
-  creation, then do not modify this constant.
+1. Execute `cp config.py.default config.py` command.
+
+2. In `configs.py`:
+    - specify the path to Obsidian vault folder in `PATH_TO_OBSIDIAN_VAULT` constant.
+    - specify a name for default deck in `DEFAULT_DECK_NAME` constant or leave the default value ("Obsidian").
+    - specify other deck names in `All_DECK_NAMES` constant. Use comma as a separator. If there is no need for extra decks 
+      creation, then do not modify this constant.
   
 ## Launching
 Run the program with `python transfer.py & python main.py` and wait until the result of synchronization outputs to the console.
